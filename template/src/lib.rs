@@ -1,4 +1,4 @@
-//! Agent allowance. See SPEC.md; this stub fails every test.
+//! Agent allowance. See SPEC.md.
 
 use tari_template_lib::prelude::*;
 
@@ -6,11 +6,39 @@ use tari_template_lib::prelude::*;
 mod allowance {
     use super::*;
 
-    pub struct Allowance {}
+    pub struct Allowance {
+        owner: RistrettoPublicKeyBytes,
+        agent: RistrettoPublicKeyBytes,
+        cap: Amount,
+        window_epochs: u64,
+        // The window `spent` belongs to; a different current window means nothing is spent yet.
+        window: u64,
+        spent: Amount,
+        funds: Vault,
+        revoked: bool,
+    }
 
     impl Allowance {
-        pub fn new(_agent: RistrettoPublicKeyBytes, _cap: Amount, _window_epochs: u64, _funds: Bucket) -> Component<Self> {
-            panic!("not implemented")
+        pub fn new(agent: RistrettoPublicKeyBytes, cap: Amount, window_epochs: u64, funds: Bucket) -> Component<Self> {
+            let owner = CallerContext::transaction_signer_public_key();
+            assert!(funds.amount().is_positive(), "amount must be positive");
+            assert!(cap.is_positive(), "cap must be positive");
+            assert!(window_epochs > 0, "window must be at least one epoch");
+            assert!(agent != owner, "agent can't be the owner");
+            let window = Consensus::current_epoch() / window_epochs;
+            Component::new(Self {
+                owner,
+                agent,
+                cap,
+                window_epochs,
+                window,
+                spent: Amount::zero(),
+                funds: Vault::from_bucket(funds),
+                revoked: false,
+            })
+            .with_access_rules(AccessRules::new().default(rule!(allow_all)))
+            .with_owner_rule(OwnerRule::None)
+            .create()
         }
 
         pub fn spend(&mut self, _amount: Amount) -> Bucket {
@@ -38,7 +66,15 @@ mod allowance {
         }
 
         pub fn status(&self) -> (RistrettoPublicKeyBytes, RistrettoPublicKeyBytes, Amount, u64, Amount, Amount, bool) {
-            panic!("not implemented")
+            (self.owner, self.agent, self.cap, self.window_epochs, self.spent_now(), self.funds.balance(), self.revoked)
+        }
+
+        fn spent_now(&self) -> Amount {
+            if Consensus::current_epoch() / self.window_epochs == self.window {
+                self.spent
+            } else {
+                Amount::zero()
+            }
         }
     }
 }
