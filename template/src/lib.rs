@@ -59,8 +59,10 @@ mod allowance {
             self.funds.deposit(funds);
         }
 
-        pub fn set_agent(&mut self, _agent: RistrettoPublicKeyBytes) {
-            panic!("not implemented")
+        pub fn set_agent(&mut self, agent: RistrettoPublicKeyBytes) {
+            self.assert_owner();
+            assert!(agent != self.owner, "agent can't be the owner");
+            self.agent = agent;
         }
 
         pub fn set_cap(&mut self, _cap: Amount) {
