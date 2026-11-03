@@ -41,8 +41,16 @@ mod allowance {
             .create()
         }
 
-        pub fn spend(&mut self, _amount: Amount) -> Bucket {
-            panic!("not implemented")
+        pub fn spend(&mut self, amount: Amount) -> Bucket {
+            assert!(CallerContext::transaction_signer_public_key() == self.agent, "only the agent");
+            assert!(!self.revoked, "allowance is revoked");
+            assert!(amount.is_positive(), "amount must be positive");
+            let spent = self.spent_now() + amount;
+            assert!(spent <= self.cap, "over the cap for this window");
+            assert!(amount <= self.funds.balance(), "not enough funds");
+            self.window = Consensus::current_epoch() / self.window_epochs;
+            self.spent = spent;
+            self.funds.withdraw(amount)
         }
 
         pub fn top_up(&mut self, _funds: Bucket) {
