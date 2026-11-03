@@ -77,8 +77,11 @@ mod allowance {
             self.revoked = true;
         }
 
-        pub fn withdraw(&mut self, _amount: Amount) -> Bucket {
-            panic!("not implemented")
+        pub fn withdraw(&mut self, amount: Amount) -> Bucket {
+            self.assert_owner();
+            assert!(amount.is_positive(), "amount must be positive");
+            assert!(amount <= self.funds.balance(), "not enough funds");
+            self.funds.withdraw(amount)
         }
 
         pub fn status(&self) -> (RistrettoPublicKeyBytes, RistrettoPublicKeyBytes, Amount, u64, Amount, Amount, bool) {
