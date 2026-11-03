@@ -65,8 +65,10 @@ mod allowance {
             self.agent = agent;
         }
 
-        pub fn set_cap(&mut self, _cap: Amount) {
-            panic!("not implemented")
+        pub fn set_cap(&mut self, cap: Amount) {
+            self.assert_owner();
+            assert!(cap.is_positive(), "cap must be positive");
+            self.cap = cap;
         }
 
         pub fn revoke(&mut self) {
