@@ -53,8 +53,10 @@ mod allowance {
             self.funds.withdraw(amount)
         }
 
-        pub fn top_up(&mut self, _funds: Bucket) {
-            panic!("not implemented")
+        pub fn top_up(&mut self, funds: Bucket) {
+            self.assert_owner();
+            assert!(funds.amount().is_positive(), "amount must be positive");
+            self.funds.deposit(funds);
         }
 
         pub fn set_agent(&mut self, _agent: RistrettoPublicKeyBytes) {
@@ -75,6 +77,10 @@ mod allowance {
 
         pub fn status(&self) -> (RistrettoPublicKeyBytes, RistrettoPublicKeyBytes, Amount, u64, Amount, Amount, bool) {
             (self.owner, self.agent, self.cap, self.window_epochs, self.spent_now(), self.funds.balance(), self.revoked)
+        }
+
+        fn assert_owner(&self) {
+            assert!(CallerContext::transaction_signer_public_key() == self.owner, "only the owner");
         }
 
         fn spent_now(&self) -> Amount {
