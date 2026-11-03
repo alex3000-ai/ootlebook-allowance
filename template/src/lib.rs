@@ -72,7 +72,9 @@ mod allowance {
         }
 
         pub fn revoke(&mut self) {
-            panic!("not implemented")
+            self.assert_owner();
+            assert!(!self.revoked, "allowance is revoked");
+            self.revoked = true;
         }
 
         pub fn withdraw(&mut self, _amount: Amount) -> Bucket {
